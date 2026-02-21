@@ -226,39 +226,58 @@ export default function ProviderEarningsScreen() {
                     </View>
                 </View>
 
-                {/* LEDGER ACTIVITY (REAL TRANSACTIONS) */}
-                <View className="px-5 mt-6">
-                    <Text className="text-gray-900 text-lg font-black tracking-tight ml-2 mb-4">Ledger Activity</Text>
-                    {data.transactions?.map((tx: any, i: number) => (
-                        <Animated.View key={tx.id || i} entering={FadeInUp.delay(i * 30)}>
-                            <TouchableOpacity activeOpacity={0.8} className="bg-white rounded-2xl p-4 mb-3 border border-gray-50 shadow-sm flex-row items-center">
-                                <View className={`w-10 h-10 rounded-xl items-center justify-center mr-4 ${tx.amount > 0 ? 'bg-emerald-50' : 'bg-gray-50'}`}>
-                                    <Ionicons
-                                        name={tx.amount > 0 ? "arrow-down-circle" : "arrow-up-circle"}
-                                        size={20}
-                                        color={tx.amount > 0 ? "#10B981" : "#94A3B8"}
-                                    />
+                {/* SETTLEMENT HISTORY NAVIGATION */}
+                <View className="px-4 mt-6">
+                    <Animated.View entering={FadeInUp.delay(200)}>
+                        <TouchableOpacity
+                            onPress={() => router.push('/(provider)/settlement-history' as any)}
+                            activeOpacity={0.9}
+                            className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm"
+                        >
+                            <View className="flex-row items-center justify-between">
+                                <View className="flex-row items-center flex-1">
+                                    <View className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 items-center justify-center mr-4">
+                                        <Ionicons name="receipt-outline" size={22} color="#10B981" />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className="font-black text-base text-gray-900 tracking-tight">Settlement History</Text>
+                                        <Text className="text-gray-400 text-[8px] font-bold uppercase tracking-[2px] mt-1">
+                                            {data.transactions?.length || 0} TRANSACTION RECORDS
+                                        </Text>
+                                    </View>
                                 </View>
-                                <View className="flex-1">
-                                    <Text className="font-black text-sm text-gray-900 tracking-tight">{tx.type || 'Booking Settlement'}</Text>
-                                    <Text className="text-gray-400 text-[8px] font-bold uppercase mt-1">{tx.date}</Text>
+                                <View className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-100 items-center justify-center">
+                                    <Ionicons name="chevron-forward" size={18} color="#6B7280" />
                                 </View>
-                                <View className="items-end">
-                                    <Text className={`text-base font-black ${tx.amount > 0 ? 'text-emerald-600' : 'text-gray-900'}`}>
-                                        {tx.amount > 0 ? '+' : ''}₹{tx.amount.toFixed(2)}
-                                    </Text>
-                                    <Text className="text-[7px] font-black uppercase text-gray-300 mt-1">{tx.status}</Text>
-                                </View>
-                            </TouchableOpacity>
-                        </Animated.View>
-                    ))}
+                            </View>
 
-                    {data.transactions?.length === 0 && (
-                        <View className="items-center py-10 bg-white rounded-[32px] border border-gray-50">
-                            <Ionicons name="receipt-outline" size={32} color="#E2E8F0" />
-                            <Text className="text-gray-300 font-bold uppercase tracking-[2px] text-[8px] mt-4">Clear Audit Logs</Text>
-                        </View>
-                    )}
+                            {/* Quick Preview - show last 2 transactions */}
+                            {data.transactions?.length > 0 && (
+                                <View className="mt-4 pt-4 border-t border-gray-50">
+                                    {data.transactions.slice(0, 2).map((tx: any, i: number) => (
+                                        <View key={tx.id || i} className="flex-row items-center justify-between py-2">
+                                            <View className="flex-row items-center flex-1">
+                                                <View className={`w-7 h-7 rounded-lg items-center justify-center mr-3 ${tx.amount > 0 ? 'bg-emerald-50' : 'bg-gray-50'}`}>
+                                                    <Ionicons
+                                                        name={tx.amount > 0 ? "arrow-down-circle" : "arrow-up-circle"}
+                                                        size={14}
+                                                        color={tx.amount > 0 ? "#10B981" : "#94A3B8"}
+                                                    />
+                                                </View>
+                                                <Text className="text-gray-500 text-[10px] font-bold">{tx.type || 'Settlement'}</Text>
+                                            </View>
+                                            <Text className={`text-sm font-black ${tx.amount > 0 ? 'text-emerald-600' : 'text-gray-900'}`}>
+                                                {tx.amount > 0 ? '+' : ''}₹{tx.amount.toFixed(2)}
+                                            </Text>
+                                        </View>
+                                    ))}
+                                    <Text className="text-emerald-600 text-[8px] font-black uppercase tracking-[2px] text-center mt-2">
+                                        TAP TO VIEW ALL →
+                                    </Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    </Animated.View>
                 </View>
             </ScrollView>
 

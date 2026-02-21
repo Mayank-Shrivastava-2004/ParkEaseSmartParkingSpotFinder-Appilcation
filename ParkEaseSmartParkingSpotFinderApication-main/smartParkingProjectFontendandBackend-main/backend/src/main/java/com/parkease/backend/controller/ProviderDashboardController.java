@@ -444,21 +444,57 @@ public class ProviderDashboardController {
                         monthlyTrend.add(map);
                 }
 
-                // 4. Transactions (Real)
-                List<Map<String, Object>> transactions = paymentRepository
-                                .findRecentPaymentsByProvider(provider.getId())
-                                .stream()
-                                .limit(10)
-                                .map(p -> {
-                                        Map<String, Object> map = new HashMap<>();
-                                        map.put("id", "TXN" + p.getId());
-                                        map.put("date", p.getPaidAt().toLocalDate().toString());
-                                        map.put("amount", p.getProviderEarning());
-                                        map.put("slot", p.getBooking().getParkingSlot().getSlotNumber());
-                                        map.put("status", "completed");
-                                        return map;
-                                })
-                                .collect(Collectors.toList());
+                // 4. Transactions (Real - Booking Payments + Withdrawals merged)
+                List<Map<String, Object>> transactions = new ArrayList<>();
+
+                // 4a. Booking Payment transactions (Credits)
+                try {
+                        paymentRepository
+                                        .findRecentPaymentsByProvider(provider.getId())
+                                        .stream()
+                                        .limit(50)
+                                        .forEach(p -> {
+                                                Map<String, Object> map = new HashMap<>();
+                                                map.put("id", "TXN" + p.getId());
+                                                map.put("date", p.getPaidAt().toLocalDate().toString());
+                                                map.put("amount", p.getProviderEarning());
+                                                map.put("type", "Booking Earning");
+                                                map.put("slot", p.getBooking().getParkingSlot().getSlotNumber());
+                                                map.put("status", "completed");
+                                                map.put("sortDate", p.getPaidAt().toString());
+                                                transactions.add(map);
+                                        });
+                } catch (Exception e) {
+                        System.err.println("⚠️ Could not load payment transactions: " + e.getMessage());
+                }
+
+                // 4b. Withdrawal transactions (Debits)
+                try {
+                        List<Withdrawal> withdrawals = withdrawalRepository.findByProviderId(provider.getId());
+                        for (Withdrawal w : withdrawals) {
+                                Map<String, Object> map = new HashMap<>();
+                                map.put("id", "WDR" + w.getId());
+                                map.put("date", w.getRequestedAt().toLocalDate().toString());
+                                map.put("amount", -1 * w.getAmount()); // Negative for debit
+                                map.put("type", "Withdrawal to " + (w.getUpiId() != null ? w.getUpiId() : "UPI"));
+                                map.put("status", w.getStatus().toLowerCase());
+                                map.put("upiId", w.getUpiId());
+                                map.put("sortDate", w.getRequestedAt().toString());
+                                transactions.add(map);
+                        }
+                } catch (Exception e) {
+                        System.err.println("⚠️ Could not load withdrawal transactions: " + e.getMessage());
+                }
+
+                // Sort by date descending (newest first)
+                transactions.sort((a, b) -> {
+                        String dateA = (String) a.getOrDefault("sortDate", "");
+                        String dateB = (String) b.getOrDefault("sortDate", "");
+                        return dateB.compareTo(dateA);
+                });
+
+                // Remove sortDate helper field before sending response
+                transactions.forEach(t -> t.remove("sortDate"));
 
                 Map<String, Object> response = new HashMap<>();
                 response.put("summary", summary);

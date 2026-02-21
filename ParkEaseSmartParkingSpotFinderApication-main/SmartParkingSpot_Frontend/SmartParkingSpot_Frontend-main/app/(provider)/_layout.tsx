@@ -13,6 +13,7 @@ export default function ProviderLayout() {
             <Stack.Screen name="add-spot" options={{ title: 'Add Spot', headerShown: false }} />
             <Stack.Screen name="my-spots" options={{ title: 'My Spots', headerShown: false }} />
             <Stack.Screen name="earnings" options={{ title: 'Earnings', headerShown: false }} />
+            <Stack.Screen name="settlement-history" options={{ title: 'Settlement History', headerShown: false }} />
             <Stack.Screen name="traffic" options={{ title: 'Live Traffic', headerShown: false }} />
             <Stack.Screen name="history" options={{ title: 'History', headerShown: false }} />
             <Stack.Screen name="ev-station" options={{ title: 'EV Station', headerShown: false }} />
