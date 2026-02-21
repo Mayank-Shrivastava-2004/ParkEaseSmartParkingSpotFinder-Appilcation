@@ -13,7 +13,8 @@ public class DataInitializer {
 
     @Bean
     public CommandLineRunner initData(UserRepository userRepository, PasswordEncoder passwordEncoder,
-            com.parkease.backend.repository.NotificationRepository notificationRepository) {
+            com.parkease.backend.repository.NotificationRepository notificationRepository,
+            com.parkease.backend.repository.ParkingLotRepository parkingLotRepository) {
         return args -> {
             if (userRepository.count() == 0) {
                 // Admin
@@ -62,6 +63,19 @@ public class DataInitializer {
                 provider.setVerificationStatus(com.parkease.backend.enumtype.VerificationStatus.APPROVED);
                 provider.setCreatedAt(java.time.LocalDateTime.now().minusWeeks(1));
                 userRepository.save(provider);
+
+                // Initial Parking Lot
+                com.parkease.backend.entity.ParkingLot lot = new com.parkease.backend.entity.ParkingLot();
+                lot.setName("Grand Central Hub");
+                lot.setAddress("Sector 62, Noida");
+                lot.setTotalSlots(50);
+                lot.setBasePrice(40.0);
+                lot.setPricePerHour(40.0);
+                lot.setActive(true);
+                lot.setProvider(provider);
+                lot.setLatitude(28.6273);
+                lot.setLongitude(77.3725);
+                parkingLotRepository.save(lot);
 
                 System.out.println(
                         "Default users created: admin@gmail.com / admin123, driver@parkease.com / driver123");

@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
     ActivityIndicator,
+    BackHandler,
     Dimensions,
     RefreshControl,
     ScrollView,
@@ -15,8 +16,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeInDown, FadeInUp, ZoomIn } from 'react-native-reanimated';
-import axios from 'axios';
-import BASE_URL from '../../constants/api';
+import api from '../../components/api/axios';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import UnifiedSidebar from '../../components/UnifiedSidebar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,7 +26,6 @@ import { Modal } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
-const API = BASE_URL;
 
 export default function ProviderDashboard() {
     const router = useRouter();
@@ -42,6 +41,7 @@ export default function ProviderDashboard() {
             occupancyRate: 0,
             activeCars: 0,
             totalSlots: 0,
+            totalLots: 0,
             rating: 5.0,
             totalReviews: 0
         },
@@ -59,36 +59,50 @@ export default function ProviderDashboard() {
     useFocusEffect(
         useCallback(() => {
             loadDashboard();
+
+            // Hardware back goes to role selection page instead of login
+            const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+                router.replace('/');
+                return true; // Prevent default back behavior
+            });
+
+            return () => backHandler.remove();
         }, [])
     );
 
     const loadDashboard = async () => {
         try {
-            const token = await AsyncStorage.getItem('token');
-            if (!token) {
-                router.replace('/(provider)');
-                return;
-            }
-
             // Real Data Fetch
             const [statsRes, profileRes] = await Promise.all([
-                axios.get(`${API}/api/provider/dashboard-stats`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                }),
-                axios.get(`${API}/api/profile`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                })
+                api.get('/provider/dashboard-stats'),
+                api.get('/profile').catch(() => null)
             ]);
 
-            if (statsRes.status === 200) {
-                setStats(statsRes.data);
+            if (statsRes.status === 200 && statsRes.data) {
+                const data = statsRes.data;
+                // Ensure summary values are never null/undefined
+                if (data.summary) {
+                    data.summary.totalRevenue = data.summary.totalRevenue ?? 0;
+                    data.summary.todayEarnings = data.summary.todayEarnings ?? 0;
+                    data.summary.monthToDateEarnings = data.summary.monthToDateEarnings ?? 0;
+                    data.summary.occupancyRate = data.summary.occupancyRate ?? 0;
+                    data.summary.activeCars = data.summary.activeCars ?? 0;
+                    data.summary.totalSlots = data.summary.totalSlots ?? 0;
+                    data.summary.totalLots = data.summary.totalLots ?? 0;
+                    data.summary.rating = data.summary.rating ?? 0;
+                    data.summary.totalReviews = data.summary.totalReviews ?? 0;
+                }
+                if (!data.revenueTrend) data.revenueTrend = [];
+                if (!data.recentActivity) data.recentActivity = [];
+                console.log('✅ Dashboard loaded:', JSON.stringify(data.summary));
+                setStats(data);
             }
-            if (profileRes.status === 200) {
+            if (profileRes?.status === 200) {
                 setProfile(profileRes.data);
             }
-        } catch (err) {
-            console.error('Failed to load dashboard', err);
-            // Fallback for demo if API fails
+        } catch (err: any) {
+            console.error('❌ Failed to load dashboard:', err?.response?.status, err?.response?.data || err.message);
+            // Keep default zeros so the UI still renders
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -97,10 +111,8 @@ export default function ProviderDashboard() {
 
     const handleStatusToggle = async (val: boolean) => {
         try {
-            const token = await AsyncStorage.getItem('token');
-            const response = await axios.put(`${API}/api/provider/status`,
-                { is_online: val },
-                { headers: { Authorization: `Bearer ${token}` } }
+            const response = await api.put('/provider/status',
+                { is_online: val }
             );
             if (response.status === 200) {
                 setStats({ ...stats, online: val });
@@ -141,12 +153,11 @@ export default function ProviderDashboard() {
                 dark={false}
                 onLogout={async () => {
                     await AsyncStorage.clear();
-                    router.replace('/(provider)' as any);
+                    router.replace('/' as any);
                 }}
                 menuItems={[
                     { icon: 'grid', label: 'Dashboard', route: '/(provider)/dashboard' },
                     { icon: 'location', label: 'My Spots', route: '/(provider)/my-spots' },
-                    { icon: 'car-sport', label: 'Spot Control', route: '/(provider)/spaces' },
                     { icon: 'calendar', label: 'Bookings', route: '/(provider)/history' },
                     { icon: 'cash', label: 'Revenue Hub', route: '/(provider)/earnings' },
                     { icon: 'analytics', label: 'Traffic', route: '/(provider)/traffic' },
@@ -165,10 +176,10 @@ export default function ProviderDashboard() {
                 {/* COMPACT KPI GRID */}
                 <View className="px-4 mt-4 flex-row flex-wrap justify-between">
                     {[
-                        { label: 'Total Spots', value: stats.summary.totalSlots, icon: 'grid-outline', color: '#8B5CF6', route: '/(provider)/spaces' },
-                        { label: 'Active Load', value: stats.summary.activeCars, icon: 'car-sport-outline', color: '#10B981', route: '/(provider)/traffic' },
-                        { label: 'Today Yield', value: `₹${stats.summary.todayEarnings.toFixed(0)}`, icon: 'cash-outline', color: '#3B82F6', route: '/(provider)/earnings' },
-                        { label: 'MTD Revenue', value: `₹${stats.summary.monthToDateEarnings.toFixed(0)}`, icon: 'stats-chart-outline', color: '#F59E0B', route: '/(provider)/earnings' },
+                        { label: 'Total Spots', value: stats.summary?.totalLots ?? 0, icon: 'grid-outline', color: '#8B5CF6', route: '/(provider)/my-spots' },
+                        { label: 'Active Load', value: stats.summary?.activeCars ?? 0, icon: 'car-sport-outline', color: '#10B981', route: '/(provider)/traffic' },
+                        { label: 'Today Yield', value: `₹${(stats.summary?.todayEarnings ?? 0).toFixed(0)}`, icon: 'cash-outline', color: '#3B82F6', route: '/(provider)/earnings' },
+                        { label: 'MTD Revenue', value: `₹${(stats.summary?.monthToDateEarnings ?? 0).toFixed(0)}`, icon: 'stats-chart-outline', color: '#F59E0B', route: '/(provider)/earnings' },
                     ].map((widget, i) => (
                         <Animated.View
                             key={i}
@@ -205,32 +216,37 @@ export default function ProviderDashboard() {
                         </View>
 
                         <View className="items-center">
-                            <LineChart
-                                data={{
-                                    labels: stats.revenueTrend.filter((_: any, idx: number) => idx % 5 === 0).map((d: any) => d.label),
-                                    datasets: [{
-                                        data: stats.revenueTrend.length > 0
-                                            ? stats.revenueTrend.map((d: any) => d.value)
-                                            : [0, 0, 0, 0, 0]
-                                    }]
-                                }}
-                                width={width - 48}
-                                height={140}
-                                yAxisLabel="₹"
-                                yAxisSuffix=""
-                                chartConfig={{
-                                    backgroundColor: '#ffffff',
-                                    backgroundGradientFrom: '#ffffff',
-                                    backgroundGradientTo: '#ffffff',
-                                    decimalPlaces: 0,
-                                    color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`,
-                                    labelColor: (opacity = 1) => `rgba(148, 163, 184, ${opacity})`,
-                                    style: { borderRadius: 16 },
-                                    propsForDots: { r: "3", strokeWidth: "2", stroke: "#8B5CF6" }
-                                }}
-                                bezier
-                                style={{ borderRadius: 16, paddingRight: 40 }}
-                            />
+                            {(stats.revenueTrend && stats.revenueTrend.length > 0) ? (
+                                <LineChart
+                                    data={{
+                                        labels: stats.revenueTrend.filter((_: any, idx: number) => idx % 5 === 0).map((d: any) => d.label || ''),
+                                        datasets: [{
+                                            data: stats.revenueTrend.map((d: any) => d.value ?? 0)
+                                        }]
+                                    }}
+                                    width={width - 48}
+                                    height={140}
+                                    yAxisLabel="₹"
+                                    yAxisSuffix=""
+                                    chartConfig={{
+                                        backgroundColor: '#ffffff',
+                                        backgroundGradientFrom: '#ffffff',
+                                        backgroundGradientTo: '#ffffff',
+                                        decimalPlaces: 0,
+                                        color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`,
+                                        labelColor: (opacity = 1) => `rgba(148, 163, 184, ${opacity})`,
+                                        style: { borderRadius: 16 },
+                                        propsForDots: { r: "3", strokeWidth: "2", stroke: "#8B5CF6" }
+                                    }}
+                                    bezier
+                                    style={{ borderRadius: 16, paddingRight: 40 }}
+                                />
+                            ) : (
+                                <View className="h-[140px] items-center justify-center">
+                                    <Ionicons name="bar-chart-outline" size={32} color="#CBD5E1" />
+                                    <Text className="text-gray-400 text-xs font-bold mt-2">No revenue data yet</Text>
+                                </View>
+                            )}
                         </View>
                     </Animated.View>
                 </View>
@@ -291,7 +307,7 @@ export default function ProviderDashboard() {
                 </View>
 
                 {/* QUICK SUPPORT */}
-                <View className="px-5 mt-6">
+                <View className="px-5 mt-6 mb-8">
                     <TouchableOpacity
                         onPress={() => router.push('/(provider)/support' as any)}
                         activeOpacity={0.8}

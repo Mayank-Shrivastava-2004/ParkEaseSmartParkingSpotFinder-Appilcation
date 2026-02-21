@@ -65,95 +65,157 @@ public class ProviderDashboardController {
                                 .orElseThrow(() -> new RuntimeException("Account not found for: " + email
                                                 + ". Since the database was reset, please Register again."));
 
-                // 1. Total Revenue
-                double totalRevenue = paymentRepository.sumTotalEarningsByProvider(provider.getId());
+                try {
+                        // 1. Total Revenue
+                        double totalRevenue = paymentRepository.sumTotalEarningsByProvider(provider.getId());
 
-                // 2. Today's Earnings
-                java.time.LocalDateTime startOfDay = java.time.LocalDate.now().atStartOfDay();
-                java.time.LocalDateTime endOfDay = java.time.LocalDate.now().atTime(java.time.LocalTime.MAX);
-                double todayEarnings = paymentRepository.sumProviderEarningBetweenForProvider(startOfDay, endOfDay,
-                                provider.getId());
+                        // 2. Today's Earnings
+                        java.time.LocalDateTime startOfDay = java.time.LocalDate.now().atStartOfDay();
+                        java.time.LocalDateTime endOfDay = java.time.LocalDate.now().atTime(java.time.LocalTime.MAX);
+                        double todayEarnings = paymentRepository.sumProviderEarningBetweenForProvider(startOfDay,
+                                        endOfDay, provider.getId());
 
-                // 3. Month to Date Earnings
-                java.time.LocalDateTime startOfMonth = java.time.LocalDate.now().withDayOfMonth(1).atStartOfDay();
-                double monthToDateEarnings = paymentRepository.sumProviderEarningBetweenForProvider(startOfMonth,
-                                endOfDay, provider.getId());
+                        // 3. Month to Date Earnings (excluding today to avoid double-counting with
+                        // todayEarnings)
+                        java.time.LocalDateTime startOfMonth = java.time.LocalDate.now().withDayOfMonth(1)
+                                        .atStartOfDay();
+                        double monthToDateEarnings = paymentRepository.sumProviderEarningBetweenForProvider(
+                                        startOfMonth, startOfDay, provider.getId());
 
-                // 4. Active Cars (Active Bookings)
-                long activeCars = bookingRepository.countActiveBookingsByProvider(provider.getId());
+                        // 4. Active Cars (Active Bookings)
+                        long activeCars = bookingRepository.countActiveBookingsByProvider(provider.getId());
 
-                // 5. Total Slots
-                int totalSlots = parkingLotRepository.sumTotalSlotsByProvider(provider.getId());
+                        // 5. Total Slots & Lots
+                        int totalSlots = parkingLotRepository.sumTotalSlotsByProvider(provider.getId());
+                        long totalLots = parkingLotRepository.countByProviderId(provider.getId());
 
-                // 6. Occupancy Rate
-                long occupancyRate = (totalSlots > 0) ? (activeCars * 100) / totalSlots : 0;
+                        // 6. Occupancy Rate
+                        long occupancyRate = (totalSlots > 0) ? (activeCars * 100) / totalSlots : 0;
 
-                // 7. Recent Activity
-                List<Map<String, Object>> recentActivity = bookingRepository
-                                .findRecentBookingsByProvider(provider.getId(), PageRequest.of(0, 5))
-                                .stream()
-                                .map(b -> {
-                                        Map<String, Object> map = new HashMap<>();
-                                        map.put("type", b.getEndTime() == null ? "check-in" : "check-out");
-                                        map.put("slotCode", b.getParkingSlot().getSlotNumber());
-                                        map.put("time", b.getCreatedAt()
-                                                        .format(DateTimeFormatter.ofPattern("hh:mm a")));
-                                        map.put("customerName", b.getDriver().getFullName());
-                                        return map;
-                                })
-                                .collect(Collectors.toList());
+                        // 7. Recent Activity (wrapped in try-catch for lazy loading safety)
+                        List<Map<String, Object>> recentActivity = new ArrayList<>();
+                        try {
+                                recentActivity = bookingRepository
+                                                .findRecentBookingsByProvider(provider.getId(), PageRequest.of(0, 5))
+                                                .stream()
+                                                .map(b -> {
+                                                        Map<String, Object> map = new HashMap<>();
+                                                        map.put("type",
+                                                                        b.getEndTime() == null ? "check-in"
+                                                                                        : "check-out");
+                                                        map.put("slotCode",
+                                                                        b.getParkingSlot() != null
+                                                                                        ? b.getParkingSlot()
+                                                                                                        .getSlotNumber()
+                                                                                        : "N/A");
+                                                        map.put("time", b.getCreatedAt()
+                                                                        .format(DateTimeFormatter
+                                                                                        .ofPattern("hh:mm a")));
+                                                        map.put("customerName",
+                                                                        b.getDriver() != null
+                                                                                        ? b.getDriver().getFullName()
+                                                                                        : "Unknown");
+                                                        return map;
+                                                })
+                                                .collect(Collectors.toList());
+                        } catch (Exception e) {
+                                System.err.println("⚠️ Could not load recent activity: " + e.getMessage());
+                        }
 
-                // 8. Monthly Performance: Day-by-day for current month
-                List<Map<String, Object>> revenueTrend = new ArrayList<>();
-                java.time.LocalDate today = java.time.LocalDate.now();
-                int daysInMonth = today.getDayOfMonth();
+                        // 8. Monthly Performance: Day-by-day for current month
+                        List<Map<String, Object>> revenueTrend = new ArrayList<>();
+                        java.time.LocalDate today = java.time.LocalDate.now();
+                        int daysInMonth = today.getDayOfMonth();
 
-                for (int d = 1; d <= daysInMonth; d++) {
-                        java.time.LocalDateTime dayStart = today.withDayOfMonth(d).atStartOfDay();
-                        java.time.LocalDateTime dayEnd = today.withDayOfMonth(d).atTime(java.time.LocalTime.MAX);
+                        for (int d = 1; d <= daysInMonth; d++) {
+                                java.time.LocalDateTime dayStart = today.withDayOfMonth(d).atStartOfDay();
+                                java.time.LocalDateTime dayEnd = today.withDayOfMonth(d)
+                                                .atTime(java.time.LocalTime.MAX);
 
-                        Double dayCredit = walletTransactionRepository.sumCreditsBetween(provider.getId(),
-                                        dayStart, dayEnd);
-                        Map<String, Object> map = new HashMap<>();
-                        map.put("label", String.valueOf(d));
-                        map.put("value", dayCredit != null ? dayCredit.intValue() : 0);
-                        revenueTrend.add(map);
+                                Double dayCredit = walletTransactionRepository.sumCreditsBetween(provider.getId(),
+                                                dayStart, dayEnd);
+                                Map<String, Object> map = new HashMap<>();
+                                map.put("label", String.valueOf(d));
+                                map.put("value", dayCredit != null ? dayCredit.intValue() : 0);
+                                revenueTrend.add(map);
+                        }
+
+                        Map<String, Object> summary = new HashMap<>();
+                        summary.put("totalRevenue", totalRevenue);
+                        summary.put("todayEarnings", todayEarnings);
+                        summary.put("monthToDateEarnings", monthToDateEarnings);
+                        summary.put("occupancyRate", occupancyRate);
+                        summary.put("activeCars", activeCars);
+                        summary.put("totalSlots", totalSlots);
+                        summary.put("totalLots", totalLots);
+
+                        // Real Rating calculation
+                        double avgRating = 0.0;
+                        int totalReviews = 0;
+                        try {
+                                List<com.parkease.backend.entity.Review> reviews = reviewRepository
+                                                .findByProviderOrderByCreatedAtDesc(provider);
+                                avgRating = reviews.stream()
+                                                .mapToInt(com.parkease.backend.entity.Review::getRating).average()
+                                                .orElse(0.0);
+                                totalReviews = reviews.size();
+                        } catch (Exception e) {
+                                System.err.println("⚠️ Could not load reviews: " + e.getMessage());
+                        }
+                        summary.put("rating", Math.round(avgRating * 10.0) / 10.0);
+                        summary.put("totalReviews", totalReviews);
+
+                        // Calculate Completion Rate
+                        long totalBookingsCount = bookingRepository.countByProvider(provider.getId());
+                        long cancelledBookingsCount = bookingRepository.countByProviderAndStatus(provider.getId(),
+                                        com.parkease.backend.enumtype.BookingStatus.CANCELLED);
+                        double completionRate = (totalBookingsCount > 0)
+                                        ? ((double) (totalBookingsCount - cancelledBookingsCount) / totalBookingsCount)
+                                                        * 100
+                                        : 100.0;
+                        summary.put("completionRate", Math.round(completionRate));
+
+                        Map<String, Object> response = new HashMap<>();
+                        response.put("summary", summary);
+                        response.put("recentActivity", recentActivity);
+                        response.put("revenueTrend", revenueTrend);
+                        response.put("online", provider.isEnabled());
+                        response.put("approved", provider.isApproved());
+                        response.put("providerName",
+                                        provider.getFullName() != null ? provider.getFullName() : "Provider");
+
+                        System.out.println("✅ Dashboard loaded for: " + email + " | totalLots=" + totalLots
+                                        + " | activeCars=" + activeCars + " | todayEarnings=" + todayEarnings);
+
+                        return ResponseEntity.ok(response);
+
+                } catch (Exception e) {
+                        System.err.println("❌ Dashboard error for " + email + ": " + e.getMessage());
+                        e.printStackTrace();
+                        // Return a safe response with empty/zero values
+                        Map<String, Object> summary = new HashMap<>();
+                        summary.put("totalRevenue", 0);
+                        summary.put("todayEarnings", 0);
+                        summary.put("monthToDateEarnings", 0);
+                        summary.put("occupancyRate", 0);
+                        summary.put("activeCars", 0);
+                        summary.put("totalSlots", 0);
+                        summary.put("totalLots", 0);
+                        summary.put("rating", 0);
+                        summary.put("totalReviews", 0);
+                        summary.put("completionRate", 100);
+
+                        Map<String, Object> response = new HashMap<>();
+                        response.put("summary", summary);
+                        response.put("recentActivity", new ArrayList<>());
+                        response.put("revenueTrend", new ArrayList<>());
+                        response.put("online", true);
+                        response.put("approved", true);
+                        response.put("providerName", "Provider");
+                        response.put("error", e.getMessage());
+
+                        return ResponseEntity.ok(response);
                 }
-
-                Map<String, Object> summary = new HashMap<>();
-                summary.put("totalRevenue", totalRevenue);
-                summary.put("todayEarnings", todayEarnings);
-                summary.put("monthToDateEarnings", monthToDateEarnings);
-                summary.put("occupancyRate", occupancyRate);
-                summary.put("activeCars", activeCars);
-                summary.put("totalSlots", totalSlots);
-
-                // Real Rating calculation
-                List<com.parkease.backend.entity.Review> reviews = reviewRepository
-                                .findByProviderOrderByCreatedAtDesc(provider);
-                double avgRating = reviews.stream().mapToInt(com.parkease.backend.entity.Review::getRating).average()
-                                .orElse(0.0);
-                summary.put("rating", Math.round(avgRating * 10.0) / 10.0);
-                summary.put("totalReviews", reviews.size());
-
-                // Calculate Completion Rate
-                long totalBookingsCount = bookingRepository.countByProvider(provider.getId());
-                long cancelledBookingsCount = bookingRepository.countByProviderAndStatus(provider.getId(),
-                                com.parkease.backend.enumtype.BookingStatus.CANCELLED);
-                double completionRate = (totalBookingsCount > 0)
-                                ? ((double) (totalBookingsCount - cancelledBookingsCount) / totalBookingsCount) * 100
-                                : 100.0;
-                summary.put("completionRate", Math.round(completionRate));
-
-                Map<String, Object> response = new HashMap<>();
-                response.put("summary", summary);
-                response.put("recentActivity", recentActivity);
-                response.put("revenueTrend", revenueTrend);
-                response.put("online", provider.isEnabled());
-                response.put("approved", provider.isApproved());
-                response.put("providerName", provider.getFullName() != null ? provider.getFullName() : "Provider");
-
-                return ResponseEntity.ok(response);
         }
 
         /*
@@ -328,11 +390,11 @@ public class ProviderDashboardController {
 
                 double growth = (lastMonth > 0) ? ((thisMonth - lastMonth) / lastMonth) * 100 : 100;
 
-                // Balance calculations
+                // Balance calculations — totalEarnings already includes all provider earnings
+                // Do NOT add walletBalance again as it represents the same money
                 double processedWithdrawals = withdrawalRepository.sumProcessedWithdrawalsByProvider(provider.getId());
                 double pendingWithdrawals = withdrawalRepository.sumPendingWithdrawalsByProvider(provider.getId());
-                double availableBalance = totalEarnings + provider.getWalletBalance() - processedWithdrawals
-                                - pendingWithdrawals;
+                double availableBalance = totalEarnings - processedWithdrawals - pendingWithdrawals;
 
                 Map<String, Object> summary = new HashMap<>();
                 summary.put("totalEarnings", totalEarnings);

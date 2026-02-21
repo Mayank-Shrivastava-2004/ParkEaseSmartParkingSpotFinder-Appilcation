@@ -95,20 +95,28 @@ export default function DriverDashboard() {
                 console.log("Bookings fetch error", e);
             }
 
-            // Calculate Spending Trend (Last 6 Months)
-            const trendMap = new Map<string, number>();
-            allBookings.forEach((b: any) => {
-                const dateRaw = b.date || b.startTime;
-                if (dateRaw) {
-                    const date = new Date(dateRaw);
-                    const month = date.toLocaleString('default', { month: 'short' });
-                    trendMap.set(month, (trendMap.get(month) || 0) + (Number(b.amount) || Number(b.totalAmount) || 0));
-                }
-            });
+            // Calculate Spending Trend (Last 7 Days - Daily)
+            const spendingTrend: { label: string, value: number }[] = [];
+            const today = new Date();
 
-            const spendingTrend = Array.from(trendMap.entries()).map(([label, value]) => ({ label, value }));
-            if (spendingTrend.length === 0) {
-                spendingTrend.push({ label: 'No Data', value: 0 });
+            for (let i = 6; i >= 0; i--) {
+                const day = new Date(today);
+                day.setDate(today.getDate() - i);
+                const dayLabel = day.toLocaleDateString('default', { weekday: 'short' });
+                const dayDateStr = day.toISOString().split('T')[0];
+
+                let dayTotal = 0;
+                allBookings.forEach((b: any) => {
+                    const bDateRaw = b.date || b.startTime;
+                    if (bDateRaw) {
+                        const bDateStr = new Date(bDateRaw).toISOString().split('T')[0];
+                        if (bDateStr === dayDateStr) {
+                            dayTotal += (Number(b.amount) || Number(b.totalAmount) || 0);
+                        }
+                    }
+                });
+
+                spendingTrend.push({ label: dayLabel, value: dayTotal });
             }
 
             // Recent Spots
@@ -301,29 +309,56 @@ export default function DriverDashboard() {
                         </View>
 
                         <View style={{ height: 220, minHeight: 220, justifyContent: 'center', alignItems: 'center' }}>
-                            <LineChart
-                                data={{
-                                    labels: stats.spendingTrend?.length > 0 ? stats.spendingTrend.map((d: any) => d.label) : ["Mon", "Tue", "Wed"],
-                                    datasets: [{
-                                        data: stats.spendingTrend?.length > 0 ? stats.spendingTrend.map((d: any) => d.value) : [0, 0, 0]
-                                    }]
-                                }}
-                                width={Dimensions.get("window").width - 70}
-                                height={220}
-                                chartConfig={{
-                                    backgroundColor: isDark ? "#0F172A" : "#FFFFFF",
-                                    backgroundGradientFrom: isDark ? "#0F172A" : "#FFFFFF",
-                                    backgroundGradientTo: isDark ? "#0F172A" : "#FFFFFF",
-                                    decimalPlaces: 0,
-                                    color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
-                                    labelColor: (opacity = 1) => isDark ? `rgba(255, 255, 255, ${opacity})` : `rgba(100, 116, 139, ${opacity})`,
-                                    style: { borderRadius: 16 },
-                                    propsForDots: { r: "6", strokeWidth: "2", stroke: "#3B82F6" }
-                                }}
-                                bezier
-                                style={{ marginVertical: 8, borderRadius: 16 }}
-                            />
+                            {(() => {
+                                // Build chart data safely
+                                const trendData = stats.spendingTrend || [];
+                                const labels = trendData.length >= 2
+                                    ? trendData.map((d: any) => d.label)
+                                    : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                                const values = trendData.length >= 2
+                                    ? trendData.map((d: any) => Number(d.value) || 0)
+                                    : [0, 0, 0, 0, 0, 0, 0];
+
+                                // react-native-chart-kit crashes on all-zero data; add tiny epsilon
+                                const allZero = values.every((v: number) => v === 0);
+                                const safeValues = allZero ? values.map((_: number, i: number) => i === 0 ? 0.01 : 0) : values;
+
+                                return (
+                                    <LineChart
+                                        data={{
+                                            labels: labels,
+                                            datasets: [{ data: safeValues }]
+                                        }}
+                                        width={Dimensions.get("window").width - 70}
+                                        height={220}
+                                        chartConfig={{
+                                            backgroundColor: isDark ? "#0F172A" : "#FFFFFF",
+                                            backgroundGradientFrom: isDark ? "#0F172A" : "#FFFFFF",
+                                            backgroundGradientTo: isDark ? "#0F172A" : "#FFFFFF",
+                                            decimalPlaces: 0,
+                                            color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+                                            labelColor: (opacity = 1) => isDark ? `rgba(255, 255, 255, ${opacity})` : `rgba(100, 116, 139, ${opacity})`,
+                                            style: { borderRadius: 16 },
+                                            propsForDots: { r: "6", strokeWidth: "2", stroke: "#3B82F6" }
+                                        }}
+                                        bezier
+                                        style={{ marginVertical: 8, borderRadius: 16 }}
+                                    />
+                                );
+                            })()}
                         </View>
+
+                        {/* Legend */}
+                        {stats.spendingTrend?.length > 0 && stats.spendingTrend.some((d: any) => d.value > 0) && (
+                            <View className="flex-row justify-between px-4 mt-2">
+                                <Text className="text-gray-400 text-[8px] font-black uppercase tracking-widest">
+                                    Total: ₹{stats.spendingTrend.reduce((s: number, d: any) => s + (Number(d.value) || 0), 0)}
+                                </Text>
+                                <Text className="text-gray-400 text-[8px] font-black uppercase tracking-widest">
+                                    Peak: ₹{Math.max(...stats.spendingTrend.map((d: any) => Number(d.value) || 0))}
+                                </Text>
+                            </View>
+                        )}
                     </View>
                 </View>
             </ScrollView>

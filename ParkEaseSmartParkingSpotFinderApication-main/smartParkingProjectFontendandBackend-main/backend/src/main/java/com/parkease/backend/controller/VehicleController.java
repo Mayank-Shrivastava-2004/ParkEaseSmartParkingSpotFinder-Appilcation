@@ -93,17 +93,7 @@ public class VehicleController {
 
     private User getAuthenticatedUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Object principal = auth.getPrincipal();
-        String email;
-
-        // Direct casting to our User entity to get the clean email string
-        if (principal instanceof com.parkease.backend.entity.User) {
-            email = ((com.parkease.backend.entity.User) principal).getEmail();
-        } else if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
-            email = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
-        } else {
-            email = auth.getName(); // Fallback to getName()
-        }
+        String email = auth.getName();
 
         System.out.println("✅ Database Querying for Email String: " + email);
 

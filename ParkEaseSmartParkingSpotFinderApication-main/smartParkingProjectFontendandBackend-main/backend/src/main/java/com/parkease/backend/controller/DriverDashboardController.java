@@ -40,8 +40,8 @@ public class DriverDashboardController {
     @GetMapping
     public ResponseEntity<?> getDashboard(Authentication auth,
             @org.springframework.web.bind.annotation.RequestParam(required = false, defaultValue = "MONTH") String range) {
-        User principal = (User) auth.getPrincipal();
-        User driver = userRepository.findById(principal.getId())
+        String email = auth.getName();
+        User driver = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Map<String, Object> response = new HashMap<>();
@@ -170,10 +170,10 @@ public class DriverDashboardController {
     @PostMapping("/add-money")
     public ResponseEntity<?> addMoney(@RequestBody Map<String, Object> payload,
             Authentication auth) {
-        User principal = (User) auth.getPrincipal();
-        User driver = userRepository.findById(principal.getId())
+        String email = auth.getName();
+        User driver = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException(
-                        "User account not found (ID: " + principal.getId() + "). Please re-login."));
+                        "User account not found. Please re-login."));
 
         if (!payload.containsKey("amount")) {
             return ResponseEntity.badRequest().body(Map.of("message", "Amount is required"));
@@ -194,8 +194,8 @@ public class DriverDashboardController {
 
     @GetMapping("/transactions")
     public ResponseEntity<?> getTransactions(Authentication auth) {
-        User principal = (User) auth.getPrincipal();
-        User driver = userRepository.findById(principal.getId())
+        String email = auth.getName();
+        User driver = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         List<com.parkease.backend.entity.WalletTransaction> txns = walletTransactionRepository
                 .findByUserOrderByCreatedAtDesc(driver);

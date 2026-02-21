@@ -124,12 +124,8 @@ public class DriverBookingController {
     @GetMapping
     public ResponseEntity<?> getMyBookings(Authentication auth) {
         User driver = null;
-        if (auth != null && auth.getPrincipal() instanceof User) {
-            driver = (User) auth.getPrincipal(); // Use the authenticated user directly
-        } else {
-            // Fallback to finding by email if principal isn't User object (rare but
-            // possible in some configs)
-            String email = auth != null ? auth.getName() : null;
+        if (auth != null) {
+            String email = auth.getName();
             if (email != null) {
                 driver = userRepository.findByEmail(email).orElse(null);
             }
@@ -195,9 +191,7 @@ public class DriverBookingController {
     public ResponseEntity<?> getTodaySpent(Authentication auth) {
         try {
             User driver = null;
-            if (auth != null && auth.getPrincipal() instanceof User) {
-                driver = (User) auth.getPrincipal();
-            } else if (auth != null) {
+            if (auth != null) {
                 String email = auth.getName();
                 driver = userRepository.findByEmail(email).orElse(null);
             }
@@ -253,10 +247,8 @@ public class DriverBookingController {
 
             // Priority 2: Use user from authentication principal OR email
             if (driver == null && auth != null) {
-                if (auth.getPrincipal() instanceof User) {
-                    driver = (User) auth.getPrincipal();
-                } else {
-                    String email = auth.getName();
+                String email = auth.getName();
+                if (email != null) {
                     driver = userRepository.findByEmail(email).orElse(null);
                 }
             }
@@ -397,4 +389,5 @@ public class DriverBookingController {
             return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
         }
     }
+
 }

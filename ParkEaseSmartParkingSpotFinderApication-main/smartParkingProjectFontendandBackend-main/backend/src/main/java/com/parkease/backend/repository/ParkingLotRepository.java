@@ -14,6 +14,8 @@ public interface ParkingLotRepository extends JpaRepository<ParkingLot, Long> {
 
     List<ParkingLot> findByProviderId(Long providerId);
 
+    long countByProviderId(Long providerId);
+
     // ✅ Find all active parking lots
     List<ParkingLot> findByActiveTrue();
 

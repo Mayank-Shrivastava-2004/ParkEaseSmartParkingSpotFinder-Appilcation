@@ -25,9 +25,9 @@ patterns = [
 ]
 
 root_dirs = [
-    r"c:\JAVA Springboard Internship\current work 06\SmartParkingSpot_Frontend\SmartParkingSpot_Frontend-main",
-    r"c:\JAVA Springboard Internship\current work 06\smartParkingProjectFontendandBackend-main\frontend",
-    r"c:\JAVA Springboard Internship\current work 06\smartParkingProjectFontendandBackend-main\backend\src\main\java\com\parkease\backend\config" # For CorsConfig
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "SmartParkingSpot_Frontend", "SmartParkingSpot_Frontend-main"),
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "smartParkingProjectFontendandBackend-main", "frontend"),
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "smartParkingProjectFontendandBackend-main", "backend")
 ]
 
 for root_dir in root_dirs:

@@ -26,8 +26,8 @@ public class DriverWalletController {
 
     @GetMapping
     public ResponseEntity<?> getWallet(Authentication auth) {
-        User principal = (User) auth.getPrincipal();
-        User driver = userRepository.findById(principal.getId())
+        String email = auth.getName();
+        User driver = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Map<String, Object> response = new HashMap<>();
@@ -37,8 +37,8 @@ public class DriverWalletController {
 
     @PostMapping("/add")
     public ResponseEntity<?> addMoney(@RequestBody Map<String, Object> payload, Authentication auth) {
-        User principal = (User) auth.getPrincipal();
-        User driver = userRepository.findById(principal.getId())
+        String email = auth.getName();
+        User driver = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!payload.containsKey("amount")) {
@@ -65,8 +65,8 @@ public class DriverWalletController {
 
     @GetMapping("/transactions")
     public ResponseEntity<?> getTransactions(Authentication auth) {
-        User principal = (User) auth.getPrincipal();
-        User driver = userRepository.findById(principal.getId())
+        String email = auth.getName();
+        User driver = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         List<WalletTransaction> txns = walletTransactionRepository.findByUserOrderByCreatedAtDesc(driver);
@@ -87,8 +87,8 @@ public class DriverWalletController {
 
     @PostMapping("/withdraw")
     public ResponseEntity<?> withdrawMoney(@RequestBody Map<String, Object> payload, Authentication auth) {
-        User principal = (User) auth.getPrincipal();
-        User driver = userRepository.findById(principal.getId())
+        String email = auth.getName();
+        User driver = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!payload.containsKey("amount")) {

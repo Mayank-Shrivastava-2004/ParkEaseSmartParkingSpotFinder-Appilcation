@@ -10,7 +10,7 @@ export default function ProviderLayout() {
             <Stack.Screen name="notifications" options={{ title: 'Notifications', headerShown: false }} />
             <Stack.Screen name="profile" options={{ title: 'My Profile', headerShown: false }} />
             <Stack.Screen name="settings" options={{ title: 'Settings', headerShown: false }} />
-            <Stack.Screen name="spaces" options={{ title: 'My Spaces', headerShown: false }} />
+            <Stack.Screen name="add-spot" options={{ title: 'Add Spot', headerShown: false }} />
             <Stack.Screen name="my-spots" options={{ title: 'My Spots', headerShown: false }} />
             <Stack.Screen name="earnings" options={{ title: 'Earnings', headerShown: false }} />
             <Stack.Screen name="traffic" options={{ title: 'Live Traffic', headerShown: false }} />

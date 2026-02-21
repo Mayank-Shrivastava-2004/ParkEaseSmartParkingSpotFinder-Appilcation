@@ -146,11 +146,10 @@ export default function ProviderEarningsScreen() {
                 dark={false}
                 onLogout={async () => {
                     await AsyncStorage.clear();
-                    router.replace('/(provider)' as any);
+                    router.replace('/' as any);
                 }}
                 menuItems={[
                     { icon: 'grid', label: 'Dashboard', route: '/(provider)/dashboard' },
-                    { icon: 'car-sport', label: 'My Parking', route: '/(provider)/spaces' },
                     { icon: 'calendar', label: 'Bookings', route: '/(provider)/history' },
                     { icon: 'cash', label: 'Revenue Hub', route: '/(provider)/earnings' },
                     { icon: 'analytics', label: 'Traffic', route: '/(provider)/traffic' },

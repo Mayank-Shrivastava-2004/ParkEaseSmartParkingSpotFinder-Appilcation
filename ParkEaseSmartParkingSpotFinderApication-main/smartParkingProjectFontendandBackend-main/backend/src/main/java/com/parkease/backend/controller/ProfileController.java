@@ -29,15 +29,9 @@ public class ProfileController {
 
     @GetMapping
     public ResponseEntity<?> getProfile(Authentication auth) {
-        User user;
-        if (auth.getPrincipal() instanceof User) {
-            user = (User) auth.getPrincipal();
-        } else {
-            // Fallback for different authentication configurations
-            String email = auth.getName();
-            user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-        }
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         Map<String, Object> profile = new HashMap<>();
         profile.put("id", user.getId());
@@ -94,14 +88,9 @@ public class ProfileController {
     }
 
     private ResponseEntity<?> processUpdate(Map<String, Object> updates, Authentication auth) {
-        User user;
-        if (auth.getPrincipal() instanceof User) {
-            user = (User) auth.getPrincipal();
-        } else {
-            String email = auth.getName();
-            user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-        }
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         java.util.Objects.requireNonNull(user, "User cannot be null for profile updates");
 
@@ -151,14 +140,9 @@ public class ProfileController {
 
     @PutMapping("/change-password")
     public ResponseEntity<?> changePassword(@RequestBody Map<String, String> request, Authentication auth) {
-        User user;
-        if (auth.getPrincipal() instanceof User) {
-            user = (User) auth.getPrincipal();
-        } else {
-            String email = auth.getName();
-            user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-        }
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         String currentPassword = request.get("currentPassword");
         String newPassword = request.get("newPassword");

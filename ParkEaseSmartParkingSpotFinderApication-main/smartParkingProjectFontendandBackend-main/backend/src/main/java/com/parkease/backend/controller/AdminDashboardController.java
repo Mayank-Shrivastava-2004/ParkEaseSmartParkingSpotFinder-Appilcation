@@ -106,15 +106,40 @@ public class AdminDashboardController {
             // 4. Total Providers
             stats.put("activeProviders", userRepository.countByRole(com.parkease.backend.enumtype.Role.PROVIDER));
 
-            // 5. Chart Data (Last 7 Days)
-            LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
-            stats.put("driverAcquisition",
-                    userRepository.getRegistrationStatsByRole(com.parkease.backend.enumtype.Role.DRIVER, sevenDaysAgo));
-            stats.put("providerOnboarding",
-                    userRepository.getRegistrationStatsByRole(com.parkease.backend.enumtype.Role.PROVIDER,
-                            sevenDaysAgo));
+            // 5. Chart Data — Build full 7-day arrays with zero-fill
+            java.time.LocalDate today = java.time.LocalDate.now();
+            java.util.List<Map<String, Object>> driverChart = new java.util.ArrayList<>();
+            java.util.List<Map<String, Object>> providerChart = new java.util.ArrayList<>();
+
+            for (int i = 6; i >= 0; i--) {
+                java.time.LocalDate day = today.minusDays(i);
+                LocalDateTime dayStart = day.atStartOfDay();
+                LocalDateTime dayEnd = day.plusDays(1).atStartOfDay();
+
+                long driverCount = userRepository.countByRoleAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                        com.parkease.backend.enumtype.Role.DRIVER, dayStart, dayEnd);
+                long providerCount = userRepository.countByRoleAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                        com.parkease.backend.enumtype.Role.PROVIDER, dayStart, dayEnd);
+
+                String dateLabel = day.toString(); // "2026-02-21"
+
+                Map<String, Object> driverPoint = new HashMap<>();
+                driverPoint.put("date", dateLabel);
+                driverPoint.put("count", driverCount);
+                driverChart.add(driverPoint);
+
+                Map<String, Object> providerPoint = new HashMap<>();
+                providerPoint.put("date", dateLabel);
+                providerPoint.put("count", providerCount);
+                providerChart.add(providerPoint);
+            }
+
+            stats.put("driverAcquisition", driverChart);
+            stats.put("providerOnboarding", providerChart);
 
             System.out.println("📊 ADMIN DASHBOARD SYNC: Sending metrics to frontend");
+            System.out.println("   Driver chart: " + driverChart);
+            System.out.println("   Provider chart: " + providerChart);
             return ResponseEntity.ok(stats);
         } catch (Exception e) {
             e.printStackTrace();

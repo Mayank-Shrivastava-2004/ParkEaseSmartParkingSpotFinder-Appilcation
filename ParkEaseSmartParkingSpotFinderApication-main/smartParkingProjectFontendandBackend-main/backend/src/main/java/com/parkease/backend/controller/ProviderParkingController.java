@@ -118,9 +118,13 @@ public class ProviderParkingController {
     @GetMapping("/spaces")
     public ResponseEntity<?> getProviderSpaces(Authentication auth) {
         try {
+            if (auth == null) {
+                return ResponseEntity.status(401).body("Error: Authentication required");
+            }
             String email = auth.getName();
             User provider = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Provider not found"));
+                    .orElseThrow(() -> new RuntimeException("Account not found for: " + email
+                            + ". Since the database was reset, please Register again."));
 
             List<ParkingLot> spaces = parkingLotRepository.findByProvider(provider);
 

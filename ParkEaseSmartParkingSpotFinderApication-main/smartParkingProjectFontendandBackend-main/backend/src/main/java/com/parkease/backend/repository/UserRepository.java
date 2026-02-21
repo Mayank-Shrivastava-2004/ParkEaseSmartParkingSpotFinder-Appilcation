@@ -36,6 +36,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     long countByRoleAndCreatedAtAfter(Role role, LocalDateTime date);
 
+    // Count registrations in date range [start, end) for daily chart
+    long countByRoleAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(Role role, LocalDateTime start, LocalDateTime end);
+
     long countByCreatedAtAfter(LocalDateTime date);
 
     List<User> findByRoleAndApprovedTrue(Role role);

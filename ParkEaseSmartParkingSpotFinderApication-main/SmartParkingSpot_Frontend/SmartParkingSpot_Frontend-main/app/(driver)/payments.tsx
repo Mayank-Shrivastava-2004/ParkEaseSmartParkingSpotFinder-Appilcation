@@ -193,26 +193,24 @@ export default function DriverPaymentsScreen() {
                                     </TouchableOpacity>
                                 </View>
 
-                                <View className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#F5F5F5] border-gray-100'} px-4 rounded-2xl mb-4 border h-[50px] justify-center`}>
+                                <View className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#F5F5F5] border-gray-100'} px-4 pt-3 pb-1 rounded-2xl mb-4 border`}>
                                     <Text className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Enter Amount (₹)</Text>
-                                    <View className="flex-row items-center">
-                                        <TextInput
-                                            className={`text-lg font-black ${isDark ? 'text-white' : 'text-gray-900'} flex-1 h-8`}
-                                            placeholder="0.00"
-                                            placeholderTextColor={isDark ? "#475569" : "#AED0E1"}
-                                            keyboardType="numeric"
-                                            value={amount}
-                                            onChangeText={setAmount}
-                                        />
-                                    </View>
+                                    <TextInput
+                                        style={{ color: isDark ? '#FFFFFF' : '#111827', fontSize: 18, fontWeight: '900', minHeight: 40 }}
+                                        placeholder="0.00"
+                                        placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
+                                        keyboardType="numeric"
+                                        value={amount}
+                                        onChangeText={setAmount}
+                                    />
                                 </View>
 
-                                <View className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#F5F5F5] border-gray-100'} px-4 rounded-2xl mb-6 border h-[50px] justify-center`}>
+                                <View className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#F5F5F5] border-gray-100'} px-4 pt-3 pb-1 rounded-2xl mb-6 border`}>
                                     <Text className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{modal.inputLabel}</Text>
                                     <TextInput
-                                        className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-900'} h-8`}
+                                        style={{ color: isDark ? '#FFFFFF' : '#111827', fontSize: 16, fontWeight: '700', minHeight: 40 }}
                                         placeholder="e.g. 9876543210 or user@bank"
-                                        placeholderTextColor={isDark ? "#475569" : "#CBD5E1"}
+                                        placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
                                         value={upiId}
                                         onChangeText={setUpiId}
                                         autoCapitalize="none"

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable } from 'reac
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, usePathname } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface MenuItem {
     icon: string;
@@ -105,6 +106,21 @@ export default function UnifiedSidebar({
                         })}
 
                         <View className={`h-[1px] ${dark ? 'bg-slate-800' : 'bg-gray-100'} my-4 mx-4`} />
+
+                        <TouchableOpacity
+                            onPress={() => {
+                                onClose();
+                                setTimeout(() => {
+                                    router.replace('/');
+                                }, 100);
+                            }}
+                            className="flex-row items-center p-4 rounded-2xl active:bg-blue-50"
+                        >
+                            <View className={`w-10 h-10 rounded-xl ${dark ? 'bg-blue-500/10' : 'bg-blue-50'} justify-center items-center mr-4`}>
+                                <Ionicons name="apps" size={20} color="#3B82F6" />
+                            </View>
+                            <Text className="font-bold text-blue-500">Switch Workspace</Text>
+                        </TouchableOpacity>
 
                         <TouchableOpacity
                             onPress={() => {

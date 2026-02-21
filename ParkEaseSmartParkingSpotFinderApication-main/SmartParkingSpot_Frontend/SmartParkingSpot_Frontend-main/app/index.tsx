@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   Text,
   TouchableOpacity,
@@ -9,7 +10,9 @@ import {
   StatusBar,
   Dimensions,
   StyleSheet,
-  ScrollView
+  ScrollView,
+  BackHandler,
+  Alert
 } from 'react-native';
 import Animated, {
   FadeInDown,
@@ -81,6 +84,20 @@ export default function RoleSelectionScreen() {
     const timer = setTimeout(() => setIsAppReady(true), 1500);
     return () => clearTimeout(timer);
   }, []);
+
+  // Show exit confirmation when pressing back on the role selection page
+  useFocusEffect(
+    useCallback(() => {
+      const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+        Alert.alert('Exit App', 'Do you want to exit ParkEase?', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Exit', onPress: () => BackHandler.exitApp() }
+        ]);
+        return true;
+      });
+      return () => backHandler.remove();
+    }, [])
+  );
 
   const panels = [
     {

@@ -16,14 +16,12 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeInDown, FadeInUp, ZoomIn } from 'react-native-reanimated';
-import axios from 'axios';
-import BASE_URL from '../../constants/api';
+import api from '../../components/api/axios';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import UnifiedSidebar from '../../components/UnifiedSidebar';
 import { useTheme } from '../../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
-const API = BASE_URL;
 
 interface ParkingSpot {
     id: number;
@@ -58,7 +56,6 @@ export default function MySpotsScreen() {
     const menuItems = [
         { icon: 'grid', label: 'Dashboard', route: '/(provider)/dashboard' },
         { icon: 'location', label: 'My Spots', route: '/(provider)/my-spots' },
-        { icon: 'car-sport', label: 'Spot Control', route: '/(provider)/spaces' },
         { icon: 'calendar', label: 'Bookings', route: '/(provider)/history' },
         { icon: 'cash', label: 'Revenue Hub', route: '/(provider)/earnings' },
         { icon: 'person', label: 'Profile', route: '/(provider)/profile' },
@@ -67,19 +64,9 @@ export default function MySpotsScreen() {
 
     const fetchSpots = async () => {
         try {
-            const token = await AsyncStorage.getItem('token');
-            if (!token) {
-                router.replace('/');
-                return;
-            }
-
             const [spotsRes, profileRes] = await Promise.all([
-                axios.get(`${API}/api/provider/spaces`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                }),
-                axios.get(`${API}/api/profile`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                }).catch(() => null)
+                api.get('/provider/spaces'),
+                api.get('/profile').catch(() => null)
             ]);
 
             if (spotsRes.status === 200) {
@@ -88,9 +75,10 @@ export default function MySpotsScreen() {
             if (profileRes?.status === 200) {
                 setProviderName(profileRes.data?.name || 'Provider');
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error('My Spots fetch failed:', err);
-            Alert.alert('Sync Error', 'Failed to retrieve parking inventory.');
+            const errMsg = err.response?.data?.message || err.response?.data || err.message;
+            Alert.alert('Sync Error', `Failed to retrieve parking inventory: ${errMsg}`);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -116,12 +104,9 @@ export default function MySpotsScreen() {
     const handleEditSave = async () => {
         if (!editSpot) return;
         try {
-            const token = await AsyncStorage.getItem('token');
-            await axios.put(`${API}/api/provider/space/${editSpot.id}`, {
+            await api.put(`/provider/space/${editSpot.id}`, {
                 name: editName,
                 price: Number(editPrice),
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
             Alert.alert('Success', 'Spot updated successfully.');
             setEditModalVisible(false);
@@ -142,10 +127,7 @@ export default function MySpotsScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            const token = await AsyncStorage.getItem('token');
-                            await axios.delete(`${API}/api/provider/space/${spot.id}`, {
-                                headers: { Authorization: `Bearer ${token}` }
-                            });
+                            await api.delete(`/provider/space/${spot.id}`);
                             Alert.alert('Removed', 'Parking spot has been decommissioned.');
                             fetchSpots();
                         } catch (err) {
@@ -263,7 +245,7 @@ export default function MySpotsScreen() {
                     <Text className={`font-black text-xl tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>All Spots</Text>
                 </View>
                 <TouchableOpacity
-                    onPress={() => router.push('/(provider)/spaces' as any)}
+                    onPress={() => router.push('/(provider)/add-spot' as any)}
                     className="bg-purple-100 px-4 py-2 rounded-full"
                 >
                     <Text className="text-purple-600 text-[9px] font-black uppercase tracking-widest">+ Add New</Text>
@@ -280,7 +262,7 @@ export default function MySpotsScreen() {
             <Text className={`font-black text-xl ${isDark ? 'text-white' : 'text-gray-900'}`}>No Spots Registered</Text>
             <Text className="text-gray-400 text-sm mt-2 text-center px-10">Deploy your first parking node to start earning revenue.</Text>
             <TouchableOpacity
-                onPress={() => router.push('/(provider)/spaces' as any)}
+                onPress={() => router.push('/(provider)/add-spot' as any)}
                 className="bg-purple-600 px-8 py-4 rounded-2xl mt-8 shadow-lg shadow-purple-200"
             >
                 <Text className="text-white font-black text-xs uppercase tracking-widest">Deploy First Spot</Text>
@@ -320,7 +302,7 @@ export default function MySpotsScreen() {
                 menuItems={menuItems}
                 onLogout={async () => {
                     await AsyncStorage.clear();
-                    router.replace('/(provider)' as any);
+                    router.replace('/' as any);
                 }}
                 gradientColors={providerGradient}
                 dark={isDark}

@@ -32,6 +32,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         HttpServletResponse response,
                         FilterChain filterChain) throws ServletException, IOException {
 
+                String path = request.getRequestURI();
+                if (path.contains("/api/auth/")) {
+                        filterChain.doFilter(request, response);
+                        return;
+                }
+
                 String authHeader = request.getHeader("Authorization");
 
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -71,7 +77,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                 System.out.println("✅ JWT Filter: Authorized " + userEmail + " with role " + role);
 
                                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                                                user,
+                                                user.getEmail(),
                                                 null,
                                                 List.of(new SimpleGrantedAuthority(role)));
 

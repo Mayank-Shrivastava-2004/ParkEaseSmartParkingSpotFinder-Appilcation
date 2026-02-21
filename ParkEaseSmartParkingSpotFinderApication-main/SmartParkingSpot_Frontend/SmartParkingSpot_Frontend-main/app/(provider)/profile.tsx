@@ -142,7 +142,6 @@ export default function ProfileScreen() {
                 onLogout={handleLogout}
                 menuItems={[
                     { icon: 'grid', label: 'Dashboard', route: '/(provider)/dashboard' },
-                    { icon: 'car-sport', label: 'My Parking', route: '/(provider)/spaces' },
                     { icon: 'calendar', label: 'Bookings', route: '/(provider)/history' },
                     { icon: 'cash', label: 'Revenue Hub', route: '/(provider)/earnings' },
                     { icon: 'person', label: 'Profile', route: '/(provider)/profile' },

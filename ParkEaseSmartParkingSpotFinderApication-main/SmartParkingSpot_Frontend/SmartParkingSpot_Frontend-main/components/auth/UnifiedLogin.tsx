@@ -212,13 +212,27 @@ export default function UnifiedLogin({ role }: UnifiedLoginProps) {
                             </TouchableOpacity>
                         </View>
 
-                        <TouchableOpacity
-                            onPress={() => router.replace('/')}
-                            className="mt-8 flex-row items-center bg-gray-100 px-6 py-3 rounded-full"
-                        >
-                            <Ionicons name="apps" size={16} color="#475569" />
-                            <Text className="text-gray-500 font-black text-[9px] uppercase tracking-widest ml-2">Switch Workspace</Text>
-                        </TouchableOpacity>
+                        {/* SWITCH WORKSPACE — Direct links to other login pages */}
+                        <Text className="text-gray-300 text-[9px] font-black uppercase tracking-[3px] mt-8 mb-3">Switch Workspace</Text>
+                        <View className="flex-row items-center gap-3">
+                            {([
+                                { key: 'admin', label: 'Admin', icon: 'shield-checkmark', route: '/(admin)', color: '#1F2937' },
+                                { key: 'driver', label: 'Driver', icon: 'car-sport', route: '/(driver)', color: '#10B981' },
+                                { key: 'provider', label: 'Provider', icon: 'business', route: '/(provider)', color: '#8B5CF6' },
+                            ] as const)
+                                .filter(r => r.key !== role)
+                                .map((r) => (
+                                    <TouchableOpacity
+                                        key={r.key}
+                                        onPress={() => router.replace(r.route as any)}
+                                        className="flex-row items-center bg-gray-50 border border-gray-100 px-5 py-3 rounded-2xl"
+                                    >
+                                        <Ionicons name={r.icon} size={16} color={r.color} />
+                                        <Text style={{ color: r.color }} className="font-black text-[10px] uppercase tracking-widest ml-2">{r.label}</Text>
+                                    </TouchableOpacity>
+                                ))
+                            }
+                        </View>
                     </View>
                 </View>
             </ScrollView>
