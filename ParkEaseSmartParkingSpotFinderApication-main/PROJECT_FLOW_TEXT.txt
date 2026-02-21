@@ -1,0 +1,90 @@
+ParkEase Detailed Project Flowchart (Text-Based)
+
+-------------------------------------------------------------------------------------
+
+1.  **START: USER LANDING**
+    *   User opens the **ParkEase Application** (React Native Mobile / Web Dashboard).
+    *   **Decision:** Is the user logged in?
+        *   **YES:**
+            *   **Driver:** Redirect to -> **Driver Dashboard** (Map View).
+            *   **Provider:** Redirect to -> **Provider Dashboard** (Stats/Management).
+            *   **Admin:** Redirect to -> **Admin Panel** (User Management).
+        *   **NO:** Proceed to **Authentication Screen**.
+
+-------------------------------------------------------------------------------------
+
+2.  **AUTHENTICATION MODULE**
+    *   **Step A:** User enters Credentials (Email & Password).
+    *   **Step B:** App sends `POST /api/auth/login` request to Backend.
+    *   **Step C:** Backend checks Database (Users Table).
+        *   **Success:** Backend returns JWT Token + User Role (Driver/Provider).
+        *   **Failure:** Backend returns 401 Unauthorized (Invalid/Unapproved).
+    *   **Step D:** App stores Token locally (AsyncStorage) and redirects based on Role.
+
+-------------------------------------------------------------------------------------
+
+3.  **DRIVER JOURNEY (Finding & Booking)**
+    *   **Step A: Driver Dashboard (Map View)**
+        *   App fetches all active parking spots from Backend (`GET /api/driver/parking/search`).
+        *   User sees markers on the map.
+    *   **Step B: Selecting a Spot**
+        *   User taps a marker -> Popup shows Spot Details (Price, Slots, Address).
+        *   User clicks **"Book Now"**.
+    *   **Step C: Booking Form**
+        *   User selects Start Time & End Time.
+        *   App calculates Total Cost.
+    *   **Step D: Payment & Confirmation**
+        *   User clicks **"Confirm Payment"** (Wallet/UPI).
+        *   App sends `POST /api/driver/bookings` with Spot ID + Times.
+        *   **Backend Validation:**
+            *   Check Wallet Balance? -> Allow if Sufficient.
+            *   Check Slot Availability? -> Allow if Free.
+        *   **Success:**
+            *   Backend updates Slot Status to 'Occupied'.
+            *   Backend deducts amount from Driver Wallet.
+            *   Backend credits share to Provider Wallet.
+            *   App shows **"Booking Confirmed"** Ticket Screen.
+
+    *   **Step E: Management**
+        *   User can view active bookings under **"My Bookings"**.
+        *   User can cancel booking (with refund rules).
+
+-------------------------------------------------------------------------------------
+
+4.  **PROVIDER JOURNEY (Managing Spots)**
+    *   **Step A: Provider Dashboard**
+        *   App fetches stats (`GET /api/provider/{id}/dashboard`).
+        *   Displays: Total Revenue, Occupancy Rate, Recent Bookings.
+    *   **Step B: Managing Spots (Multi-Spot System)**
+        *   User navigates to **"My Spaces"**.
+        *   App lists all active spots (`GET /api/provider/parking/provider/{id}`).
+        *   **Action 1: Add New Spot**
+            *   User clicks "Add Spot" -> Enters Details (Name, Address, Price, Lat/Lng).
+            *   App sends `POST /api/provider/parking/add`.
+            *   Backend creates NEW ParkingLot entity.
+        *   **Action 2: Delete Spot**
+            *   User selects a spot -> Clicks "Delete".
+            *   App sends `DELETE /api/provider/parking/delete/{id}`.
+            *   Backend removes the spot.
+    *   **Step C: Earnings**
+        *   User can view daily/monthly earnings reports.
+        *   User can request withdrawal of funds.
+
+-------------------------------------------------------------------------------------
+
+5.  **ADMIN JOURNEY (System Oversight)**
+    *   **Step A: Admin Panel**
+        *   View System Health.
+        *   Manage Users (Approve/Ban Drivers or Providers).
+        *   View Global Booking Statistics.
+        *   Resolve Disputes.
+
+-------------------------------------------------------------------------------------
+
+6.  **TECHNICAL DATA FLOW**
+    *   **Client (Frontend):** Sends HTTP Requests (Axios).
+    *   **Server (Backend):** Receives Request -> Controller -> Service -> Repository.
+    *   **Database:** Executes SQL Query (CRUD Operations).
+    *   **Response:** Data travels back up the chain to the Frontend for rendering.
+
+-------------------------------------------------------------------------------------
