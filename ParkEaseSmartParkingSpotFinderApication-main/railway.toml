@@ -1,0 +1,8 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "cd smartParkingProjectFontendandBackend-main/backend && mvn clean package -DskipTests"
+
+[deploy]
+startCommand = "cd smartParkingProjectFontendandBackend-main/backend && java -jar target/backend-0.0.1-SNAPSHOT.jar"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
