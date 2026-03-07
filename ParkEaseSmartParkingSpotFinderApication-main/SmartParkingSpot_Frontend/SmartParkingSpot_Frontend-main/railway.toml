@@ -1,0 +1,7 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm install && npx expo export -p web"
+
+[deploy]
+startCommand = "npx serve dist --single --listen $PORT"
+restartPolicyType = "ON_FAILURE"
