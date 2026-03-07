@@ -4,10 +4,10 @@
 // For iOS simulator: use localhost
 
 // To find your IP: Run 'ipconfig' in terminal and look for IPv4 Address
-const NETWORK_IP = "10.11.212.172"; // Latest Wi-Fi IP detected from ipconfig
+const NETWORK_IP = "10.22.120.172"; // Latest Wi-Fi IP detected from ipconfig
 
 // For React Native, we use the network IP by default
-const BASE_URL = `http://${NETWORK_IP}:8090`;
+const BASE_URL = `http://${NETWORK_IP}:8080`;
 
 export default BASE_URL;
 
